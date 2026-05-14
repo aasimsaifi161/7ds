@@ -1,64 +1,133 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useAuth } from "@/app/_context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import Header from "./_components/Header";
+import SinCard from "./_components/SinCard";
+import { sins } from "@/lib/sins-data";
+import { getUserProfile } from "@/lib/firestore";
+
+export default function HomePage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const [progress, setProgress] = useState<Record<string, number>>({});
+  const [loadingProgress, setLoadingProgress] = useState(true);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    async function fetchProgress() {
+      if (user) {
+        try {
+          const profile = await getUserProfile(user.uid);
+          if (profile?.progress) {
+            setProgress(profile.progress);
+          }
+        } catch (error) {
+          console.error("Failed to fetch progress:", error);
+        }
+        setLoadingProgress(false);
+      }
+    }
+    fetchProgress();
+  }, [user]);
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-5 h-5 border border-muted border-t-foreground rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const totalChallenges = sins.reduce(
+    (acc, sin) => acc + sin.challenges.length,
+    0
+  );
+  const completedChallenges = Object.values(progress).reduce(
+    (acc, val) => acc + val,
+    0
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-background">
+      <Header />
+
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-10"
+        >
+          <h1 className="text-2xl font-bold text-foreground mb-2">
+            The Seven Deadly Sins
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-sm text-muted max-w-xl leading-relaxed">
+            Each sin holds 10 challenges designed to break your chains. Complete
+            them in order — prove your discipline, or remain bound.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+          {/* Overall Progress */}
+          {!loadingProgress && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-6 flex items-center gap-4"
+            >
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold text-foreground font-mono">
+                  {completedChallenges}
+                </span>
+                <span className="text-xs text-muted">
+                  / {totalChallenges} total
+                </span>
+              </div>
+              <div className="flex-1 max-w-xs h-1 bg-border rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-foreground rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{
+                    width: `${(completedChallenges / totalChallenges) * 100}%`,
+                  }}
+                  transition={{ duration: 1, delay: 0.5 }}
+                />
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Sin Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {sins.map((sin, index) => (
+            <SinCard
+              key={sin.id}
+              sin={sin}
+              index={index}
+              progress={progress[sin.id] || 0}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ))}
         </div>
+
+        {/* Footer Note */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="mt-12 text-center"
+        >
+          <p className="text-xs text-muted">
+            Complete each challenge with proof to unlock the next.
+          </p>
+        </motion.div>
       </main>
     </div>
   );
