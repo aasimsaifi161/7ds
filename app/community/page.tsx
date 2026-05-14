@@ -59,8 +59,13 @@ export default function CommunityPage() {
             transition={{ duration: 0.5 }}
             className="space-y-6"
           >
-            <div className="inline-block px-3 py-1 rounded-full bg-border/50 text-[10px] font-bold tracking-widest text-accent uppercase">
-              Community Hub
+            <div className="flex flex-col items-center gap-2">
+              <div className="inline-block px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold tracking-[0.2em] text-accent uppercase animate-pulse">
+                Coming Soon
+              </div>
+              <div className="text-[10px] font-bold tracking-widest text-muted uppercase">
+                Community Hub
+              </div>
             </div>
             
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
